@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"=== Parent \\(D:/\\) top level ===\" && ls -la \"D:/\" 2>/dev/null | head -50 *)",
+      "Bash(echo \"=== folder names containing azmir/noor/glow anywhere on D: ===\" && find \"D:/\" -type d \\\\\\( -iname \"*azmir*\" -o -iname \"*noor*\" -o -iname \"*glow*\" \\\\\\) 2>/dev/null | grep -vi node_modules | head -20 *)",
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(git ls-remote https://github.com/rahman61-mustafiz/glow-with-azmir-frontend 2>&1)",
+      "PowerShell(npm install 2>&1)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(git init -b main 2>&1)",
+      "PowerShell(git add -A)"
+    ]
+  }
+}
