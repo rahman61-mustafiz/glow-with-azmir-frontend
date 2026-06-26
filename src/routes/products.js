@@ -1,8 +1,8 @@
 const router = require('express').Router()
-const products = require('../repos/products')
+const products = require('../repos/wooProducts') // WooCommerce is the source of truth
 const settings = require('../repos/settings')
 
-// GET /api/products  — list all (admin view: includes buyPrice + status)
+// GET /api/products — list from WooCommerce (admin view: buyPrice + derived status)
 router.get('/', async (_req, res, next) => {
   try {
     const s = await settings.get()
@@ -23,39 +23,15 @@ router.get('/public', async (_req, res, next) => {
   }
 })
 
-// POST /api/products — create
-router.post('/', async (req, res, next) => {
-  try {
-    if (!req.body.name) return res.status(400).json({ message: 'name is required' })
-    const created = await products.create(req.body)
-    const s = await settings.get()
-    res.status(201).json(products.withStatus(created, s.lowStockThreshold))
-  } catch (e) {
-    next(e)
-  }
-})
-
-// PUT /api/products/:id — update
-router.put('/:id', async (req, res, next) => {
-  try {
-    const updated = await products.update(req.params.id, req.body)
-    if (!updated) return res.status(404).json({ message: 'Product not found' })
-    const s = await settings.get()
-    res.json(products.withStatus(updated, s.lowStockThreshold))
-  } catch (e) {
-    next(e)
-  }
-})
-
-// DELETE /api/products/:id
-router.delete('/:id', async (req, res, next) => {
-  try {
-    const ok = await products.remove(req.params.id)
-    if (!ok) return res.status(404).json({ message: 'Product not found' })
-    res.json({ ok: true })
-  } catch (e) {
-    next(e)
-  }
-})
+// Writes are wired to WooCommerce in the next step (Phase 3).
+// Until then, manage products in WooCommerce directly.
+function phase3(_req, res) {
+  res.status(501).json({
+    message: 'Product editing will be wired to WooCommerce next. For now, add/edit products in WooCommerce.',
+  })
+}
+router.post('/', phase3)
+router.put('/:id', phase3)
+router.delete('/:id', phase3)
 
 module.exports = router

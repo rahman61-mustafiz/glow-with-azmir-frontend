@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const ledger = require('../repos/ledger')
-const products = require('../repos/products')
+const products = require('../repos/wooProducts') // stock value derived from WooCommerce
 
 // GET /api/accounting/summary
 router.get('/summary', async (_req, res, next) => {
