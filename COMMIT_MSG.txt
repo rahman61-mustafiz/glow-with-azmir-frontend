@@ -1,0 +1,15 @@
+Initial Glow with Azmir backend (Node/Express + MongoDB)
+
+Mirrors the Noor backend architecture for the Glow with Azmir admin SaaS
+panel + (future) tablet. No login (optional API_KEY for writes).
+
+- Models: Product (buy/sell/stock), Sale, Customer, LedgerEntry,
+  GalleryItem, Advertise (singleton .mp4 + description), Settings
+- Routes: products (CRUD), sales (today/record -> stock + income + customer),
+  customers (suggest/lookup), accounting (summary + ledger), gallery
+  (upload/delete), advertise (GET/PUT .mp4 upload), settings
+- Auto-seeds starter data when DB is empty; in-memory MongoDB for zero-setup dev
+- Multer uploads served at /uploads; seed script; .env.example
+- README + DEPLOY (Atlas + Railway + Netlify/Vercel + Noor admin link)
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
