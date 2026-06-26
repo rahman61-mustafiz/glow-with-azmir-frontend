@@ -1,6 +1,11 @@
 node_modules
 .env
 .env.local
+
+# Firebase service account credentials — NEVER commit these
+serviceAccountKey.json
+*serviceAccount*.json
+
 uploads/*
 !uploads/.gitkeep
 *.log

@@ -1,14 +1,11 @@
 const router = require('express').Router()
-const GalleryItem = require('../models/GalleryItem')
+const gallery = require('../repos/gallery')
 const { uploadImage, fileUrl } = require('../middleware/upload')
-
-const shape = (g) => ({ ...g.toObject(), id: String(g._id) })
 
 // GET /api/gallery
 router.get('/', async (_req, res, next) => {
   try {
-    const items = await GalleryItem.find().sort({ createdAt: -1 })
-    res.json(items.map(shape))
+    res.json(await gallery.list())
   } catch (e) {
     next(e)
   }
@@ -19,13 +16,13 @@ router.post('/', uploadImage.single('image'), async (req, res, next) => {
   try {
     const { title, category, active } = req.body
     const imageUrl = req.file ? fileUrl(req, req.file.filename) : req.body.imageUrl || ''
-    const item = await GalleryItem.create({
-      title: title || '',
-      category: category || '',
+    const item = await gallery.create({
+      title,
+      category,
       imageUrl,
       active: active === undefined ? true : active === 'true' || active === true,
     })
-    res.status(201).json(shape(item))
+    res.status(201).json(item)
   } catch (e) {
     next(e)
   }
@@ -34,9 +31,9 @@ router.post('/', uploadImage.single('image'), async (req, res, next) => {
 // PUT /api/gallery/:id  (toggle active / edit title/category)
 router.put('/:id', async (req, res, next) => {
   try {
-    const item = await GalleryItem.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    const item = await gallery.update(req.params.id, req.body)
     if (!item) return res.status(404).json({ message: 'Gallery item not found' })
-    res.json(shape(item))
+    res.json(item)
   } catch (e) {
     next(e)
   }
@@ -45,8 +42,8 @@ router.put('/:id', async (req, res, next) => {
 // DELETE /api/gallery/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const r = await GalleryItem.findByIdAndDelete(req.params.id)
-    if (!r) return res.status(404).json({ message: 'Gallery item not found' })
+    const ok = await gallery.remove(req.params.id)
+    if (!ok) return res.status(404).json({ message: 'Gallery item not found' })
     res.json({ ok: true })
   } catch (e) {
     next(e)

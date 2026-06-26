@@ -1,38 +1,43 @@
 # Glow with Azmir — Backend
 
-Node/Express + MongoDB API that powers the **Glow with Azmir** admin SaaS panel
-and (later) the Flutter tablet. Mirrors the architecture of `noor-beauty-backend`.
+Node/Express + **Firebase Firestore** API that powers the **Glow with Azmir**
+admin SaaS panel and (later) the Flutter tablet. Firestore is used because the
+shop's ISP blocks MongoDB connections; Firestore works over HTTPS.
 
 - **No login** (per requirements). Optional light protection via an `API_KEY`
   header for writes — off by default.
-- Auto-seeds starter data when the database is empty.
-- Local dev needs **zero setup**: if `MONGODB_URI` is empty, an in-memory
-  MongoDB is started automatically (data not persisted).
+- Data access lives in `src/repos/` (one module per collection); Firebase Admin
+  is initialized in `src/config/firebase.js` from a service-account key.
+
+## Setup
+
+1. Create a Firebase project + enable **Firestore**.
+2. Project settings → Service accounts → **Generate new private key**, save it as
+   `serviceAccountKey.json` in the backend root (git-ignored).
+3. `cp .env.example .env` (defaults are fine for local).
 
 ## Run locally
 
 ```bash
 npm install
-npm start          # http://localhost:4000  (in-memory DB, auto-seeded)
+npm run seed       # populate Firestore with starter data (run once)
+npm start          # http://localhost:4000
 # or: npm run dev  (nodemon)
 ```
 
 Health check: `GET http://localhost:4000/health`
 
-To use a real database, copy `.env.example` → `.env` and set `MONGODB_URI`.
-Then optionally `npm run seed` to (re)load starter data.
+## Firestore collections (schemaless — shapes enforced in `src/repos/`)
 
-## Data models
-
-| Model | Purpose |
+| Collection | Purpose |
 | --- | --- |
-| `Product` | name, sku, category, **buyPrice** (admin-only), **sellPrice** (public), stock |
-| `Sale` | customerName, customerPhone, items[], total |
-| `Customer` | phone (unique), name, lastItems — for type-ahead/lookup |
-| `LedgerEntry` | income/expense entries (sales auto-create income) |
-| `GalleryItem` | title, category, imageUrl, active |
-| `Advertise` | singleton: videoUrl (.mp4) + description for the public home page |
-| `Settings` | singleton: storeName, phone, currency, lowStockThreshold |
+| `products` | name, sku, category, **buyPrice** (admin-only), **sellPrice** (public), stock |
+| `sales` | customerName, customerPhone, items[], total |
+| `customers` | doc id = phone; name, lastItems — for type-ahead/lookup |
+| `ledger` | income/expense entries (sales auto-create income) |
+| `gallery` | title, category, imageUrl, active |
+| `advertise` | doc `singleton`: videoUrl (.mp4) + description for the public home page |
+| `settings` | doc `singleton`: storeName, phone, currency, lowStockThreshold |
 
 ## API
 
@@ -76,5 +81,7 @@ Uploaded files are served from `/uploads/...`.
 
 ## Environment
 
-See `.env.example`. Key vars: `MONGODB_URI`, `PORT`, `CORS_ORIGIN`,
-`PUBLIC_URL`, optional `API_KEY`.
+See `.env.example`. Vars: `PORT`, `CORS_ORIGIN`, `PUBLIC_URL`, optional
+`API_KEY`, and optional `FIREBASE_SERVICE_ACCOUNT` (path override; defaults to
+`./serviceAccountKey.json`). **No database URL** — Firestore auth comes from the
+service-account key.

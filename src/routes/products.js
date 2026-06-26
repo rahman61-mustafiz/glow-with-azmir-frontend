@@ -1,13 +1,13 @@
 const router = require('express').Router()
-const Product = require('../models/Product')
-const { getSettings, withStatus } = require('../lib/settings')
+const products = require('../repos/products')
+const settings = require('../repos/settings')
 
-// GET /api/products  — list all (admin view: includes buyPrice)
+// GET /api/products  — list all (admin view: includes buyPrice + status)
 router.get('/', async (_req, res, next) => {
   try {
-    const settings = await getSettings()
-    const products = await Product.find().sort({ createdAt: 1 })
-    res.json(products.map((p) => withStatus(p, settings.lowStockThreshold)))
+    const s = await settings.get()
+    const list = await products.list()
+    res.json(list.map((p) => products.withStatus(p, s.lowStockThreshold)))
   } catch (e) {
     next(e)
   }
@@ -16,15 +16,8 @@ router.get('/', async (_req, res, next) => {
 // GET /api/products/public — public website view: only sellPrice exposed
 router.get('/public', async (_req, res, next) => {
   try {
-    const products = await Product.find()
-    res.json(
-      products.map((p) => ({
-        id: String(p._id),
-        name: p.name,
-        category: p.category,
-        price: p.sellPrice, // NOTE: buyPrice intentionally omitted
-      }))
-    )
+    const list = await products.list()
+    res.json(list.map((p) => ({ id: p.id, name: p.name, category: p.category, price: p.sellPrice })))
   } catch (e) {
     next(e)
   }
@@ -33,11 +26,10 @@ router.get('/public', async (_req, res, next) => {
 // POST /api/products — create
 router.post('/', async (req, res, next) => {
   try {
-    const { name, sku, category, buyPrice, sellPrice, stock } = req.body
-    if (!name) return res.status(400).json({ message: 'name is required' })
-    const product = await Product.create({ name, sku, category, buyPrice, sellPrice, stock })
-    const settings = await getSettings()
-    res.status(201).json(withStatus(product, settings.lowStockThreshold))
+    if (!req.body.name) return res.status(400).json({ message: 'name is required' })
+    const created = await products.create(req.body)
+    const s = await settings.get()
+    res.status(201).json(products.withStatus(created, s.lowStockThreshold))
   } catch (e) {
     next(e)
   }
@@ -46,15 +38,10 @@ router.post('/', async (req, res, next) => {
 // PUT /api/products/:id — update
 router.put('/:id', async (req, res, next) => {
   try {
-    const { name, sku, category, buyPrice, sellPrice, stock } = req.body
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { name, sku, category, buyPrice, sellPrice, stock },
-      { new: true, runValidators: true }
-    )
-    if (!product) return res.status(404).json({ message: 'Product not found' })
-    const settings = await getSettings()
-    res.json(withStatus(product, settings.lowStockThreshold))
+    const updated = await products.update(req.params.id, req.body)
+    if (!updated) return res.status(404).json({ message: 'Product not found' })
+    const s = await settings.get()
+    res.json(products.withStatus(updated, s.lowStockThreshold))
   } catch (e) {
     next(e)
   }
@@ -63,8 +50,8 @@ router.put('/:id', async (req, res, next) => {
 // DELETE /api/products/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const r = await Product.findByIdAndDelete(req.params.id)
-    if (!r) return res.status(404).json({ message: 'Product not found' })
+    const ok = await products.remove(req.params.id)
+    if (!ok) return res.status(404).json({ message: 'Product not found' })
     res.json({ ok: true })
   } catch (e) {
     next(e)

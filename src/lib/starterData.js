@@ -1,8 +1,4 @@
-const Product = require('../models/Product')
-const Advertise = require('../models/Advertise')
-const Settings = require('../models/Settings')
-const GalleryItem = require('../models/GalleryItem')
-const LedgerEntry = require('../models/LedgerEntry')
+const { db, Timestamp } = require('../config/firebase')
 
 const PRODUCTS = [
   { name: 'Rose Glow Serum', sku: 'GWA-SER-01', category: 'Skincare', buyPrice: 900, sellPrice: 1450, stock: 32 },
@@ -33,28 +29,60 @@ function ledgerSeed() {
   ]
 }
 
+// Batch-delete every doc returned by a collection/query (handles >500 via chunks).
+async function deleteAll(query) {
+  const snap = await query.get()
+  if (snap.empty) return
+  let batch = db.batch()
+  let n = 0
+  for (const d of snap.docs) {
+    batch.delete(d.ref)
+    if (++n === 450) {
+      await batch.commit()
+      batch = db.batch()
+      n = 0
+    }
+  }
+  if (n > 0) await batch.commit()
+}
+
+// Seed starter data.
+//   seed()             -> only seeds if products collection is empty (no-op otherwise)
+//   seed({force:true}) -> clears products/gallery/seed-ledger + resets singletons, then re-seeds
+// Sale-generated ledger entries (saleId != null) are preserved on a force reseed.
 async function seed({ force = false } = {}) {
-  const count = await Product.countDocuments()
-  if (count > 0 && !force) return false
+  const products = db.collection('products')
+  const gallery = db.collection('gallery')
+  const ledger = db.collection('ledger')
+
+  const existing = await products.limit(1).get()
+  if (!existing.empty && !force) return false
 
   if (force) {
-    await Promise.all([
-      Product.deleteMany({}),
-      GalleryItem.deleteMany({}),
-      LedgerEntry.deleteMany({ saleId: null }),
-      Advertise.deleteMany({}),
-      Settings.deleteMany({}),
-    ])
+    await deleteAll(products)
+    await deleteAll(gallery)
+    await deleteAll(ledger.where('saleId', '==', null))
   }
 
-  await Product.insertMany(PRODUCTS)
-  await GalleryItem.insertMany(GALLERY.map((g) => ({ ...g, active: true })))
-  await LedgerEntry.insertMany(ledgerSeed())
-  if (!(await Advertise.findOne({ key: 'singleton' })))
-    await Advertise.create({ key: 'singleton', videoUrl: '', description: ADVERTISE_DESC })
-  if (!(await Settings.findOne({ key: 'singleton' })))
-    await Settings.create({ key: 'singleton' })
+  // Stagger createdAt by index so list ordering is deterministic (matches array order).
+  const base = Date.now()
+  const stamp = (i) => Timestamp.fromMillis(base + i)
 
+  const batch = db.batch()
+  PRODUCTS.forEach((p, i) => {
+    batch.set(products.doc(), { ...p, createdAt: stamp(i), updatedAt: stamp(i) })
+  })
+  GALLERY.forEach((g, i) => {
+    batch.set(gallery.doc(), { title: g.title, category: g.category, imageUrl: '', active: true, createdAt: stamp(i), updatedAt: stamp(i) })
+  })
+  ledgerSeed().forEach((e, i) => {
+    batch.set(ledger.doc(), { ...e, saleId: null, createdAt: stamp(i), updatedAt: stamp(i) })
+  })
+  const ts = stamp(0)
+  batch.set(db.collection('advertise').doc('singleton'), { videoUrl: '', description: ADVERTISE_DESC, createdAt: ts, updatedAt: ts })
+  batch.set(db.collection('settings').doc('singleton'), { storeName: 'Glow with Azmir', phone: '', currency: 'BDT (৳)', lowStockThreshold: 5, createdAt: ts, updatedAt: ts })
+
+  await batch.commit()
   return true
 }
 

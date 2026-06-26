@@ -8,8 +8,8 @@ into your existing Noor admin so you can open it without a separate login.
 
 ```
 ┌─────────────────────────┐      ┌──────────────────────────┐
-│  Glow panel (frontend)  │ ───► │  Glow backend (this repo) │ ───► MongoDB Atlas
-│  React + Vite (Netlify) │ API  │  Node/Express (Railway)   │
+│  Glow panel (frontend)  │ ───► │  Glow backend (this repo) │ ───► Firebase Firestore
+│  React + Vite (Netlify) │ API  │  Node/Express (Railway)   │      (HTTPS — not ISP-blocked)
 └─────────────────────────┘      └──────────────────────────┘
         ▲
         │  link added in Noor admin nav  →  opens the Glow panel
@@ -17,16 +17,15 @@ into your existing Noor admin so you can open it without a separate login.
 
 ---
 
-## 1) Database — MongoDB Atlas (free tier)
+## 1) Database — Firebase Firestore (free tier)
 
-1. Create a free cluster at https://www.mongodb.com/atlas
-2. Database Access → add a user (username + password).
-3. Network Access → allow `0.0.0.0/0` (or Railway's IPs).
-4. Copy the connection string:
-   `mongodb+srv://<user>:<pass>@<cluster>/glow_with_azmir?retryWrites=true&w=majority`
+Already done if you followed setup, but for reference:
+1. Create a project at https://console.firebase.google.com (e.g. `glow-with-azmir`).
+2. Build → **Firestore Database** → Create (production mode, region `asia-southeast1`).
+3. Project settings → **Service accounts** → **Generate new private key** → download the JSON.
+   Keep it secret (it's git-ignored as `serviceAccountKey.json`).
 
-(You already use Railway+Mongo for Noor — you can reuse the same Atlas account,
-just a **new database name** `glow_with_azmir`.)
+Firestore talks over HTTPS, so it works even where MongoDB is blocked.
 
 ## 2) Backend — Railway
 
@@ -34,13 +33,14 @@ just a **new database name** `glow_with_azmir`.)
 2. On https://railway.app → New Project → Deploy from GitHub → pick
    `glow-with-azmir-backend`.
 3. Set **Variables**:
-   - `MONGODB_URI` = your Atlas string
+   - `FIREBASE_SERVICE_ACCOUNT_JSON` = paste the **entire contents** of your
+     `serviceAccountKey.json` (one line). The backend reads creds from this on
+     hosts — no file needed.
    - `PUBLIC_URL` = the Railway URL it gives you (e.g. `https://glow-backend-production.up.railway.app`)
    - `CORS_ORIGIN` = your panel URL (from step 3), or `*` to start
    - `API_KEY` = (optional) a random string if you want light write-protection
 4. Railway runs `npm start`. Confirm `https://<your-backend>/health` returns `{"status":"ok"}`.
-5. (Optional) Run the seed once: Railway shell → `npm run seed`. The server also
-   auto-seeds if the DB is empty.
+5. Seed once: Railway shell → `npm run seed` (populates Firestore starter data).
 
 > ⚠️ Railway disk is ephemeral — uploaded `.mp4`/images can be lost on redeploy.
 > For permanent media, switch to S3/Cloudinary (the upload layer is isolated in

@@ -1,13 +1,11 @@
 const router = require('express').Router()
-const Customer = require('../models/Customer')
+const customers = require('../repos/customers')
 
 // GET /api/customers/suggest?q=017  — type-ahead (min 4 digits)
+// NOTE: must be declared before '/:phone' so it isn't captured as a phone.
 router.get('/suggest', async (req, res, next) => {
   try {
-    const q = String(req.query.q || '').replace(/\D/g, '')
-    if (q.length < 4) return res.json([])
-    const matches = await Customer.find({ phone: { $regex: q } }).limit(8)
-    res.json(matches.map((c) => ({ name: c.name, phone: c.phone, lastItems: c.lastItems })))
+    res.json(await customers.suggest(req.query.q || ''))
   } catch (e) {
     next(e)
   }
@@ -16,10 +14,7 @@ router.get('/suggest', async (req, res, next) => {
 // GET /api/customers/:phone  — full lookup
 router.get('/:phone', async (req, res, next) => {
   try {
-    const phone = String(req.params.phone)
-    const c = await Customer.findOne({ phone })
-    if (!c) return res.json({ found: false, name: '', phone, lastItems: [] })
-    res.json({ found: true, name: c.name, phone: c.phone, lastItems: c.lastItems })
+    res.json(await customers.lookup(req.params.phone))
   } catch (e) {
     next(e)
   }

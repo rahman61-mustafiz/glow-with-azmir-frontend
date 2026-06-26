@@ -1,19 +1,11 @@
 const router = require('express').Router()
-const Advertise = require('../models/Advertise')
+const advertise = require('../repos/advertise')
 const { uploadVideo, fileUrl } = require('../middleware/upload')
-
-async function getDoc() {
-  let doc = await Advertise.findOne({ key: 'singleton' })
-  if (!doc) doc = await Advertise.create({ key: 'singleton' })
-  return doc
-}
-
-const shape = (d) => ({ videoUrl: d.videoUrl, description: d.description, updatedAt: d.updatedAt })
 
 // GET /api/advertise  — read current advertise content (public + admin)
 router.get('/', async (_req, res, next) => {
   try {
-    res.json(shape(await getDoc()))
+    res.json(await advertise.get())
   } catch (e) {
     next(e)
   }
@@ -23,11 +15,10 @@ router.get('/', async (_req, res, next) => {
 // multipart/form-data: field "video" (optional file), field "description" (text)
 router.put('/', uploadVideo.single('video'), async (req, res, next) => {
   try {
-    const doc = await getDoc()
-    if (req.file) doc.videoUrl = fileUrl(req, req.file.filename)
-    if (typeof req.body.description === 'string') doc.description = req.body.description
-    await doc.save()
-    res.json(shape(doc))
+    const patch = {}
+    if (req.file) patch.videoUrl = fileUrl(req, req.file.filename)
+    if (typeof req.body.description === 'string') patch.description = req.body.description
+    res.json(await advertise.update(patch))
   } catch (e) {
     next(e)
   }

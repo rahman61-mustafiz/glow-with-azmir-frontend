@@ -1,16 +1,12 @@
-// Force-reseed the database with starter data.  Usage:  npm run seed
+// Force-reseed Firestore with starter data.  Usage:  npm run seed
 require('dotenv').config()
-const mongoose = require('mongoose')
-const { connectDB } = require('./config/db')
+require('./config/firebase') // initialize Firebase Admin
 const { seed } = require('./lib/starterData')
 
 async function run() {
-  await connectDB()
-  console.log('Reseeding (force)…')
+  console.log('Reseeding Firestore (force)…')
   await seed({ force: true })
-  console.log('Done.')
-  await mongoose.connection.close()
-  if (global.__MEM_MONGO__) await global.__MEM_MONGO__.stop()
+  console.log('Done — products, gallery, ledger, advertise & settings seeded.')
   process.exit(0)
 }
 
