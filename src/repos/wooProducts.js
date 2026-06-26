@@ -20,6 +20,8 @@ function mapProduct(w) {
     buyPrice: buy ? Number(buy.value) || 0 : 0,
     sellPrice: Number(w.regular_price || w.price || 0) || 0,
     stock: w.stock_quantity != null ? Number(w.stock_quantity) : 0,
+    manageStock: !!w.manage_stock,
+    stockStatus: w.stock_status || 'instock',
   }
 }
 
@@ -38,7 +40,12 @@ async function get(id) {
 }
 
 function withStatus(p, threshold) {
-  return { ...p, status: p.stock <= threshold ? 'low' : 'active' }
+  // When Woo tracks quantity, use the threshold. Otherwise fall back to Woo's
+  // in-stock flag (so unmanaged-but-in-stock products aren't shown as "low").
+  let status
+  if (p.manageStock) status = p.stock <= threshold ? 'low' : 'active'
+  else status = p.stockStatus === 'outofstock' ? 'low' : 'active'
+  return { ...p, status }
 }
 
 module.exports = { list, get, withStatus, mapProduct, GLOW_BUY_META }
