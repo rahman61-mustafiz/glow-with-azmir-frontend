@@ -3,7 +3,7 @@ import './layout.css'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', end: true },
-  { to: '/account', label: 'Account' },
+  { to: '/accounting', label: 'Accounting' },
   { to: '/gallery', label: 'Gallery' },
   { to: '/product-price', label: 'Product price' },
   { to: '/advertise', label: 'Advertise panel' },

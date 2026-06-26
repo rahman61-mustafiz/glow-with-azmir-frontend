@@ -25,10 +25,10 @@ Built with **React + Vite**.
 
 ## Sections (nav tabs)
 
-1. **Home** — dashboard with stats + quick actions
-2. **Account** — admin profile & store settings
+1. **Home** — dashboard with an **Overview** view + a **Today's sales** view (live/recent sales feed + today's total)
+2. **Accounting** — business bookkeeping: income, expenses, profit, and current stock value (tied to stock on hand + buying prices)
 3. **Gallery** — image curation grid
-4. **Product price** — product / pricing / stock table
+4. **Product price** — products with **buying price** (admin-only) + **selling price** (public) + stock
 5. **Advertise panel** — *the important one* ⤵
 
 ### Advertise panel
@@ -72,18 +72,22 @@ glow-with-azmir-frontend/
     ├── main.jsx            # React + Router entry
     ├── App.jsx             # routes
     ├── index.css           # design tokens + base styles
+    ├── data/
+    │   └── products.js     # shared product catalog (buy/sell/stock) + ৳ formatter
     ├── api/
-    │   └── advertise.js    # STUBBED advertise API (TODO(backend))
+    │   ├── advertise.js    # STUBBED advertise API (TODO(backend))
+    │   ├── sales.js        # STUBBED today's-sales API (TODO(backend))
+    │   └── accounting.js   # STUBBED accounting summary (TODO(backend))
     ├── components/
     │   ├── Layout.jsx      # top bar + nav (Bold header)
     │   ├── layout.css
     │   ├── PageHeader.jsx
     │   └── StatusPill.jsx
     └── pages/
-        ├── Home.jsx
-        ├── Account.jsx
+        ├── Home.jsx        # Overview + Today's sales views
+        ├── Accounting.jsx  # bookkeeping (income/expenses/profit/stock value)
         ├── Gallery.jsx
-        ├── ProductPrice.jsx
+        ├── ProductPrice.jsx     # buying (admin-only) + selling (public) prices
         ├── AdvertisePanel.jsx   # most complete
         └── advertise.css
 ```

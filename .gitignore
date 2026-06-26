@@ -27,3 +27,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Stray nested duplicate clone (not part of the app)
+glow-with-azmir-frontend/

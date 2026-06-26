@@ -9,7 +9,9 @@
       "PowerShell(npm install 2>&1)",
       "PowerShell(npm run build 2>&1)",
       "PowerShell(git init -b main 2>&1)",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "PowerShell(git remote add origin https://github.com/rahman61-mustafiz/glow-with-azmir-frontend.git 2>&1)",
+      "PowerShell(git push -u origin main 2>&1)"
     ]
   }
 }

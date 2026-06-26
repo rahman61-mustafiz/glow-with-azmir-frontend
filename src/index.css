@@ -198,6 +198,54 @@ td {
   font-size: 14px;
 }
 
+/* ---------- Segmented control (view switcher) ---------- */
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--gold-tint);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.seg-btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+.seg-btn.is-active {
+  background: var(--black);
+  color: var(--gold);
+}
+
+/* ---------- Table column tags ---------- */
+.col-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.col-tag-admin {
+  background: var(--gold-tint);
+  color: var(--gold-dark);
+  border: 1px solid var(--border);
+}
+.col-tag-public {
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+}
+
 /* ---------- Utilities ---------- */
 .muted {
   color: var(--muted);
