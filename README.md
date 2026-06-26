@@ -26,10 +26,23 @@ Built with **React + Vite**.
 ## Sections (nav tabs)
 
 1. **Home** — dashboard with an **Overview** view + a **Today's sales** view (live/recent sales feed + today's total)
-2. **Accounting** — business bookkeeping: income, expenses, profit, and current stock value (tied to stock on hand + buying prices)
-3. **Gallery** — image curation grid
-4. **Product price** — products with **buying price** (admin-only) + **selling price** (public) + stock
-5. **Advertise panel** — *the important one* ⤵
+2. **Sales entry** — tablet input system (modelled on the Noor booking tablet): record a sale's client name, phone & products
+3. **Accounting** — business bookkeeping: income, expenses, profit, and current stock value (tied to stock on hand + buying prices)
+4. **Gallery** — image curation grid
+5. **Product price** — products with **buying price** (admin-only) + **selling price** (public) + stock
+6. **Advertise panel** — *the important one* ⤵
+
+### Sales entry (tablet input system)
+
+Modelled on the **Noor salon booking tablet**: a 3-panel flow — **categories │ product grid │ client + cart + confirm**.
+The admin manually records each sale:
+
+- **Client name** (required)
+- **Phone number** (with type-ahead suggestions + returning-customer lookup — stubbed)
+- **Product(s) bought** — tap products to add, adjust quantity; selling price auto-fills, total computes
+
+On **Confirm sale**, the sale is recorded and **immediately appears in Home → Today's sales** (live).
+Backed by a client-side store (`src/data/salesStore.js`) so it works offline; swap for the real API later.
 
 ### Advertise panel
 
@@ -73,10 +86,12 @@ glow-with-azmir-frontend/
     ├── App.jsx             # routes
     ├── index.css           # design tokens + base styles
     ├── data/
-    │   └── products.js     # shared product catalog (buy/sell/stock) + ৳ formatter
+    │   ├── products.js     # shared product catalog (buy/sell/stock/category) + ৳ formatter
+    │   └── salesStore.js   # client-side sales store (Sales entry -> Today's sales)
     ├── api/
     │   ├── advertise.js    # STUBBED advertise API (TODO(backend))
-    │   ├── sales.js        # STUBBED today's-sales API (TODO(backend))
+    │   ├── sales.js        # STUBBED sales API, backed by salesStore (TODO(backend))
+    │   ├── customers.js    # STUBBED customer suggest/lookup (TODO(backend))
     │   └── accounting.js   # STUBBED accounting summary (TODO(backend))
     ├── components/
     │   ├── Layout.jsx      # top bar + nav (Bold header)
@@ -84,7 +99,9 @@ glow-with-azmir-frontend/
     │   ├── PageHeader.jsx
     │   └── StatusPill.jsx
     └── pages/
-        ├── Home.jsx        # Overview + Today's sales views
+        ├── Home.jsx        # Overview + Today's sales views (live)
+        ├── SalesEntry.jsx  # tablet sales input system (Noor-style)
+        ├── sales-entry.css
         ├── Accounting.jsx  # bookkeeping (income/expenses/profit/stock value)
         ├── Gallery.jsx
         ├── ProductPrice.jsx     # buying (admin-only) + selling (public) prices

@@ -5,6 +5,7 @@ import Accounting from './pages/Accounting.jsx'
 import Gallery from './pages/Gallery.jsx'
 import ProductPrice from './pages/ProductPrice.jsx'
 import AdvertisePanel from './pages/AdvertisePanel.jsx'
+import SalesEntry from './pages/SalesEntry.jsx'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/product-price" element={<ProductPrice />} />
         <Route path="/advertise" element={<AdvertisePanel />} />
+        <Route path="/sales" element={<SalesEntry />} />
       </Routes>
     </Layout>
   )

@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import { fmtBDT } from '../data/products.js'
 import { getTodaySales } from '../api/sales.js'
+import { subscribe } from '../data/salesStore.js'
 
 const STATS = [
   { label: 'Products listed', value: '5' },
@@ -126,14 +127,19 @@ function TodaySales() {
   const [loading, setLoading] = useState(true)
 
   // NOTE: stubbed fetch. When wired, this is where a live feed / poll / socket
-  // would push new sales as customers buy products.
+  // would push new sales as customers buy products. For now we subscribe to the
+  // client-side sales store so sales entered on the Sales-entry tab show up here.
   useEffect(() => {
     let active = true
-    getTodaySales()
-      .then((d) => active && setData(d))
-      .finally(() => active && setLoading(false))
+    const refresh = () =>
+      getTodaySales()
+        .then((d) => active && setData(d))
+        .finally(() => active && setLoading(false))
+    refresh()
+    const unsub = subscribe(refresh)
     return () => {
       active = false
+      unsub()
     }
   }, [])
 
