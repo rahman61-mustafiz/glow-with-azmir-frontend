@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader.jsx'
-import StatusPill from '../components/StatusPill.jsx'
 import { getAdvertise, saveAdvertise } from '../api/advertise.js'
 import './advertise.css'
 
@@ -108,7 +107,11 @@ export default function AdvertisePanel() {
       <PageHeader
         title="Advertise panel"
         subtitle="Controls the Advertise section on the public website home page."
-        actions={<StatusPill status={videoUrl ? 'active' : 'low'} />}
+        actions={
+          <span className={'pill ' + (videoUrl ? 'pill-active' : 'pill-low')}>
+            {videoUrl ? '● Live' : '● No video'}
+          </span>
+        }
       />
 
       <div className="advertise-grid">

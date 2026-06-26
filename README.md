@@ -41,8 +41,9 @@ The admin manually records each sale:
 - **Phone number** (with type-ahead suggestions + returning-customer lookup — stubbed)
 - **Product(s) bought** — tap products to add, adjust quantity; selling price auto-fills, total computes
 
-On **Confirm sale**, the sale is recorded and **immediately appears in Home → Today's sales** (live).
-Backed by a client-side store (`src/data/salesStore.js`) so it works offline; swap for the real API later.
+On **Confirm sale**, the sale is recorded in the backend, **stock decrements**, an
+**income entry** is logged in Accounting, and it **immediately appears in Home →
+Today's sales** (the feed polls live).
 
 ### Advertise panel
 
@@ -54,23 +55,39 @@ From this tab the admin changes exactly **two** things:
 
 with a **live preview** of how it will look to visitors.
 
-> **Backend not built yet.** API calls are stubbed in `src/api/advertise.js`
-> — search for `TODO(backend)` to find every place to wire the real endpoint.
-> Proposed endpoints: `GET /api/advertise` and `PUT /api/advertise` (multipart).
+The video + description are stored in the backend (`GET`/`PUT /api/advertise`,
+multipart). The public website reads the same `GET /api/advertise` to render its
+home-page Advertise section.
+
+## Backend
+
+This panel is now **fully wired to a live backend** —
+[`glow-with-azmir-backend`](../glow-with-azmir-backend) (Node/Express + MongoDB).
+Everything is editable and persists: products/prices, sales, accounting,
+gallery, advertise. There is **no login** (internal tool).
+
+The API base URL comes from `VITE_API_BASE` (see `.env.example`).
 
 ## Getting started
 
+You need the backend running too.
+
 ```bash
+# 1) Backend  (separate folder: glow-with-azmir-backend)
+cd ../glow-with-azmir-backend
 npm install
-npm run dev      # starts Vite dev server at http://localhost:5173
+npm start                 # http://localhost:4000  (in-memory DB, auto-seeded)
+
+# 2) Frontend (this folder)
+npm install
+cp .env.example .env      # VITE_API_BASE=http://localhost:4000/api
+npm run dev               # http://localhost:5173
 ```
 
-Other scripts:
+Other scripts: `npm run build` (→ `dist/`), `npm run preview`.
 
-```bash
-npm run build    # production build -> dist/
-npm run preview  # preview the production build
-```
+To deploy and get a live link, see **`DEPLOY.md`** in the backend repo
+(MongoDB Atlas + Railway + Netlify/Vercel + how to add the link into the Noor admin).
 
 ## Project structure
 
@@ -78,33 +95,28 @@ npm run preview  # preview the production build
 glow-with-azmir-frontend/
 ├── index.html              # loads Open Sans + mounts the app
 ├── vite.config.js
-├── package.json
-├── public/
-│   └── favicon.svg
+├── .env.example            # VITE_API_BASE (backend URL)
+├── public/favicon.svg
 └── src/
     ├── main.jsx            # React + Router entry
     ├── App.jsx             # routes
     ├── index.css           # design tokens + base styles
     ├── data/
-    │   ├── products.js     # shared product catalog (buy/sell/stock/category) + ৳ formatter
-    │   └── salesStore.js   # client-side sales store (Sales entry -> Today's sales)
-    ├── api/
-    │   ├── advertise.js    # STUBBED advertise API (TODO(backend))
-    │   ├── sales.js        # STUBBED sales API, backed by salesStore (TODO(backend))
-    │   ├── customers.js    # STUBBED customer suggest/lookup (TODO(backend))
-    │   └── accounting.js   # STUBBED accounting summary (TODO(backend))
-    ├── components/
-    │   ├── Layout.jsx      # top bar + nav (Bold header)
-    │   ├── layout.css
-    │   ├── PageHeader.jsx
-    │   └── StatusPill.jsx
+    │   └── products.js     # ৳ currency formatter (data now from the API)
+    ├── api/                # all talk to the live backend
+    │   ├── client.js       # fetch wrapper (VITE_API_BASE + optional key)
+    │   ├── products.js     # list/create/update/delete
+    │   ├── sales.js        # today's sales + record sale
+    │   ├── customers.js    # phone suggest/lookup
+    │   ├── accounting.js   # summary + ledger entries
+    │   ├── gallery.js      # list/add(upload)/delete
+    │   └── advertise.js    # get + save (.mp4 upload + description)
+    ├── components/         # Layout (top bar + nav), PageHeader, StatusPill
     └── pages/
-        ├── Home.jsx        # Overview + Today's sales views (live)
-        ├── SalesEntry.jsx  # tablet sales input system (Noor-style)
-        ├── sales-entry.css
-        ├── Accounting.jsx  # bookkeeping (income/expenses/profit/stock value)
-        ├── Gallery.jsx
-        ├── ProductPrice.jsx     # buying (admin-only) + selling (public) prices
-        ├── AdvertisePanel.jsx   # most complete
-        └── advertise.css
+        ├── Home.jsx        # Overview + Today's sales (polls live)
+        ├── SalesEntry.jsx  # tablet sales input system (Noor-style)  + sales-entry.css
+        ├── Accounting.jsx  # bookkeeping + add/delete ledger entries
+        ├── Gallery.jsx     # add (image upload) / delete
+        ├── ProductPrice.jsx     # add/edit/delete; buying (admin) + selling (public)
+        └── AdvertisePanel.jsx   # .mp4 upload + description + live preview  + advertise.css
 ```

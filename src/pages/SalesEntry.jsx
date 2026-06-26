@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PRODUCTS, CATEGORIES, fmtBDT } from '../data/products.js'
+import { fmtBDT } from '../data/products.js'
 import { recordSale, getTodaySales } from '../api/sales.js'
+import { getProducts } from '../api/products.js'
 import { suggestCustomers, lookupCustomer } from '../api/customers.js'
 import './sales-entry.css'
 
@@ -10,9 +11,22 @@ import './sales-entry.css'
 // Admin records each sale: client name, phone, and the product(s) bought.
 
 export default function SalesEntry() {
+  const [products, setProducts] = useState([])
   const [category, setCategory] = useState(null) // null = All
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState([]) // [{ id, name, price, qty }]
+
+  // Load products from the backend.
+  useEffect(() => {
+    getProducts()
+      .then(setProducts)
+      .catch(() => setProducts([]))
+  }, [])
+
+  const categories = useMemo(
+    () => [...new Set(products.map((p) => p.category))],
+    [products]
+  )
 
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
@@ -51,12 +65,12 @@ export default function SalesEntry() {
 
   const visibleProducts = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return PRODUCTS.filter((p) => {
+    return products.filter((p) => {
       const inCat = !category || p.category === category
       const inSearch = !q || p.name.toLowerCase().includes(q)
       return inCat && inSearch
     })
-  }, [category, search])
+  }, [products, category, search])
 
   const subtotal = cart.reduce((s, l) => s + l.price * l.qty, 0)
   const totalQty = cart.reduce((s, l) => s + l.qty, 0)
@@ -106,14 +120,15 @@ export default function SalesEntry() {
     if (cart.length === 0) return alert('Add at least one product')
     setSubmitting(true)
     try {
-      // TODO(backend): recordSale posts to the sales API (stubbed for now).
       const sale = await recordSale({
         customerName: name.trim(),
         customerPhone: phone.trim(),
-        items: cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price })),
+        items: cart.map((l) => ({ productId: l.id, name: l.name, qty: l.qty, price: l.price })),
       })
       setSuccess(sale)
       resetForm()
+    } catch (e) {
+      alert('Could not save sale: ' + e.message)
     } finally {
       setSubmitting(false)
     }
@@ -153,16 +168,16 @@ export default function SalesEntry() {
             onClick={() => setCategory(null)}
           >
             <span>All products</span>
-            <span className="cat-count">{PRODUCTS.length}</span>
+            <span className="cat-count">{products.length}</span>
           </button>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c}
               className={'cat-tile' + (category === c ? ' is-active' : '')}
               onClick={() => setCategory(c)}
             >
               <span>{c}</span>
-              <span className="cat-count">{PRODUCTS.filter((p) => p.category === c).length}</span>
+              <span className="cat-count">{products.filter((p) => p.category === c).length}</span>
             </button>
           ))}
         </aside>
@@ -287,7 +302,7 @@ export default function SalesEntry() {
             <div className="dialog-check">✓</div>
             <h3 style={{ margin: '8px 0 4px' }}>Sale recorded</h3>
             <p className="muted" style={{ margin: 0 }}>
-              {success.name} · {fmtBDT(success.total)}
+              {success.customerName} · {fmtBDT(success.total)}
             </p>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
               It now appears in Home → Today's sales.

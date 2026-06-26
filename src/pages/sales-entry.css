@@ -313,40 +313,6 @@
   font-size: 16px;
 }
 
-/* ---------- Success dialog ---------- */
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 20, 20, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 20px;
-}
-.dialog {
-  background: var(--white);
-  border-radius: 16px;
-  padding: 28px;
-  width: 100%;
-  max-width: 340px;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-.dialog-check {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto;
-  border-radius: 999px;
-  background: var(--black);
-  color: var(--gold);
-  font-size: 30px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* ---------- Responsive (narrow tablet / portrait) ---------- */
 @media (max-width: 980px) {
   .sales-grid {

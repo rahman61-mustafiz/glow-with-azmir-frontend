@@ -4,19 +4,14 @@ import PageHeader from '../components/PageHeader.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import { fmtBDT } from '../data/products.js'
 import { getTodaySales } from '../api/sales.js'
-import { subscribe } from '../data/salesStore.js'
-
-const STATS = [
-  { label: 'Products listed', value: '5' },
-  { label: 'Gallery items', value: '6' },
-  { label: 'Low stock', value: '2' },
-  { label: 'Advertise status', value: 'Live' },
-]
+import { getProducts } from '../api/products.js'
+import { getGallery } from '../api/gallery.js'
+import { getAdvertise } from '../api/advertise.js'
 
 const SHORTCUTS = [
+  { to: '/sales', title: 'Sales entry', desc: 'Record a sale on the tablet.' },
   { to: '/advertise', title: 'Advertise panel', desc: 'Update the home-page video + description.' },
   { to: '/product-price', title: 'Product price', desc: 'Manage products, buying & selling prices.' },
-  { to: '/gallery', title: 'Gallery', desc: 'Curate showcase images.' },
   { to: '/accounting', title: 'Accounting', desc: 'Income, expenses, profit & stock value.' },
 ]
 
@@ -35,7 +30,6 @@ export default function Home() {
         }
       />
 
-      {/* Dashboard view switcher */}
       <div className="seg">
         <button
           className={'seg-btn' + (view === 'overview' ? ' is-active' : '')}
@@ -60,14 +54,37 @@ export default function Home() {
 
 /* ---------------- Overview ---------------- */
 function Overview() {
+  const [stats, setStats] = useState(null)
+  const [lowProducts, setLowProducts] = useState([])
+
+  useEffect(() => {
+    let active = true
+    Promise.all([getProducts(), getGallery(), getAdvertise()])
+      .then(([products, gallery, advertise]) => {
+        if (!active) return
+        const low = products.filter((p) => p.status === 'low')
+        setLowProducts(low)
+        setStats([
+          { label: 'Products listed', value: String(products.length) },
+          { label: 'Gallery items', value: String(gallery.length) },
+          { label: 'Low stock', value: String(low.length) },
+          { label: 'Advertise status', value: advertise.videoUrl ? 'Live' : 'No video' },
+        ])
+      })
+      .catch(() => active && setStats([]))
+    return () => {
+      active = false
+    }
+  }, [])
+
+  if (!stats) return <div className="card muted">Loading…</div>
+
   return (
     <>
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <div key={s.label} className="card">
-            <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>
-              {s.label}
-            </div>
+            <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>{s.label}</div>
             <div style={{ fontSize: 30, fontWeight: 800, marginTop: 6 }}>{s.value}</div>
           </div>
         ))}
@@ -81,39 +98,29 @@ function Overview() {
               <strong style={{ fontSize: 16 }}>{s.title}</strong>
               <span style={{ color: 'var(--gold-dark)' }}>→</span>
             </div>
-            <p className="muted" style={{ margin: '8px 0 0', fontSize: 13 }}>
-              {s.desc}
-            </p>
+            <p className="muted" style={{ margin: '8px 0 0', fontSize: 13 }}>{s.desc}</p>
           </Link>
         ))}
       </div>
 
-      <h2 style={{ marginTop: 34, fontSize: 18 }}>Recent activity</h2>
+      <h2 style={{ marginTop: 34, fontSize: 18 }}>Low stock</h2>
       <div className="card" style={{ padding: 0 }}>
         <table>
           <thead>
-            <tr>
-              <th>Item</th>
-              <th>Type</th>
-              <th>Status</th>
-            </tr>
+            <tr><th>Product</th><th>Stock</th><th>Status</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Home-page advertise video</td>
-              <td>Advertise</td>
-              <td><StatusPill status="active" /></td>
-            </tr>
-            <tr>
-              <td>Rose Glow Serum</td>
-              <td>Product</td>
-              <td><StatusPill status="low" /></td>
-            </tr>
-            <tr>
-              <td>Summer Collection banner</td>
-              <td>Gallery</td>
-              <td><StatusPill status="active" /></td>
-            </tr>
+            {lowProducts.length === 0 ? (
+              <tr><td colSpan={3} className="muted">Nothing low on stock 🎉</td></tr>
+            ) : (
+              lowProducts.map((p) => (
+                <tr key={p.id}>
+                  <td><strong>{p.name}</strong></td>
+                  <td>{p.stock}</td>
+                  <td><StatusPill status="low" /></td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -125,27 +132,30 @@ function Overview() {
 function TodaySales() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
 
-  // NOTE: stubbed fetch. When wired, this is where a live feed / poll / socket
-  // would push new sales as customers buy products. For now we subscribe to the
-  // client-side sales store so sales entered on the Sales-entry tab show up here.
+  // Poll every 15s so new sales (from the Sales-entry tab / tablet) appear live.
   useEffect(() => {
     let active = true
     const refresh = () =>
       getTodaySales()
-        .then((d) => active && setData(d))
+        .then((d) => {
+          if (!active) return
+          setData(d)
+          setErr('')
+        })
+        .catch(() => active && setErr('Could not reach the backend.'))
         .finally(() => active && setLoading(false))
     refresh()
-    const unsub = subscribe(refresh)
+    const t = setInterval(refresh, 15000)
     return () => {
       active = false
-      unsub()
+      clearInterval(t)
     }
   }, [])
 
-  if (loading || !data) {
-    return <div className="card muted">Loading today's sales…</div>
-  }
+  if (loading) return <div className="card muted">Loading today's sales…</div>
+  if (err) return <div className="card" style={{ color: '#9b1c1c' }}>{err}</div>
 
   return (
     <>
@@ -176,32 +186,29 @@ function TodaySales() {
         <table>
           <thead>
             <tr>
-              <th>Order</th>
-              <th>Product</th>
-              <th>Qty</th>
-              <th>Time</th>
+              <th>Order</th><th>Product</th><th>Qty</th><th>Time</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {data.items.map((s) => (
-              <tr key={s.id}>
-                <td className="muted">{s.id}</td>
-                <td><strong>{s.product}</strong></td>
-                <td>{s.qty}</td>
-                <td className="muted">{s.time}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmtBDT(s.amount)}</td>
-              </tr>
-            ))}
+            {data.items.length === 0 ? (
+              <tr><td colSpan={5} className="muted">No sales yet today.</td></tr>
+            ) : (
+              data.items.map((s) => (
+                <tr key={s.id}>
+                  <td className="muted">{s.id.slice(-6)}</td>
+                  <td><strong>{s.product}</strong></td>
+                  <td>{s.qty}</td>
+                  <td className="muted">{s.time}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmtBDT(s.amount)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
-
-      <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
-        {/* TODO(backend): wire to GET /api/sales/today + a live stream so new
-            purchases appear here automatically. */}
-        Note: sales are stubbed data — when a customer buys a product this feed
-        will update automatically once the backend is connected.
+      <p className="muted" style={{ marginTop: 14, fontSize: 13 }}>
+        Updates automatically every 15s — new sales from the Sales-entry tab / tablet appear here.
       </p>
     </>
   )
