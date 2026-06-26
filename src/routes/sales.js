@@ -1,35 +1,14 @@
 const router = require('express').Router()
-const sales = require('../repos/sales')
+const sales = require('../repos/wooSales') // sales = WooCommerce orders
 
-function fmtTime(d) {
-  let h = d.getHours()
-  const m = String(d.getMinutes()).padStart(2, '0')
-  const ampm = h < 12 ? 'AM' : 'PM'
-  h = h % 12 === 0 ? 12 : h % 12
-  return `${String(h).padStart(2, '0')}:${m} ${ampm}`
-}
-
-function feedShape(sale) {
-  const qty = sale.items.reduce((n, i) => n + i.qty, 0)
-  const first = sale.items[0]?.name ?? '—'
-  const extra = sale.items.length - 1
-  return {
-    id: sale.id,
-    product: extra > 0 ? `${first} +${extra} more` : first,
-    qty,
-    amount: sale.total,
-    time: fmtTime(new Date(sale.createdAt)),
-  }
-}
-
-// GET /api/sales/today — totals + feed for the dashboard
+// GET /api/sales/today — totals + feed for the dashboard (today's Woo orders)
 router.get('/today', async (_req, res, next) => {
   try {
-    const list = await sales.listToday()
-    const items = list.map(feedShape)
+    const orders = await sales.listToday()
+    const items = orders.map(sales.feedShape)
     res.json({
-      total: list.reduce((s, x) => s + x.total, 0),
-      orders: list.length,
+      total: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
+      orders: orders.length,
       count: items.reduce((n, i) => n + i.qty, 0),
       items,
     })
@@ -38,16 +17,17 @@ router.get('/today', async (_req, res, next) => {
   }
 })
 
-// GET /api/sales — recent sales (last 100)
+// GET /api/sales — recent sales (recent Woo orders, mapped to the feed shape)
 router.get('/', async (_req, res, next) => {
   try {
-    res.json(await sales.listRecent(100))
+    const orders = await sales.listRecent(100)
+    res.json(orders.map(sales.feedShape))
   } catch (e) {
     next(e)
   }
 })
 
-// POST /api/sales — record a sale (tablet / sales-entry tab)
+// POST /api/sales — record a sale = create a WooCommerce order
 router.post('/', async (req, res, next) => {
   try {
     const { customerName, customerPhone, items } = req.body

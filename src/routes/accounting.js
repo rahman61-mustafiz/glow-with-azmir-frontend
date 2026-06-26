@@ -1,13 +1,17 @@
 const router = require('express').Router()
 const ledger = require('../repos/ledger')
 const products = require('../repos/wooProducts') // stock value derived from WooCommerce
+const sales = require('../repos/wooSales') // sales revenue from WooCommerce orders
 
 // GET /api/accounting/summary
 router.get('/summary', async (_req, res, next) => {
   try {
     const entries = await ledger.list(200)
-    const income = entries.filter((e) => e.type === 'income').reduce((s, e) => s + e.amount, 0)
+    const ledgerIncome = entries.filter((e) => e.type === 'income').reduce((s, e) => s + e.amount, 0)
     const expenses = entries.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0)
+    // Income = manual ledger income + recent WooCommerce sales revenue (last ~100 orders).
+    const salesIncome = await sales.recentRevenue(100)
+    const income = ledgerIncome + salesIncome
 
     const prods = await products.list()
     const unitsOnHand = prods.reduce((s, p) => s + p.stock, 0)

@@ -1,5 +1,8 @@
 require('dotenv').config()
 
+// Use the shop's timezone so "today's sales" matches the local day (override via TZ env).
+process.env.TZ = process.env.TZ || 'Asia/Dhaka'
+
 const express = require('express')
 const helmet = require('helmet')
 const cors = require('cors')

@@ -23,15 +23,39 @@ router.get('/public', async (_req, res, next) => {
   }
 })
 
-// Writes are wired to WooCommerce in the next step (Phase 3).
-// Until then, manage products in WooCommerce directly.
-function phase3(_req, res) {
-  res.status(501).json({
-    message: 'Product editing will be wired to WooCommerce next. For now, add/edit products in WooCommerce.',
-  })
-}
-router.post('/', phase3)
-router.put('/:id', phase3)
-router.delete('/:id', phase3)
+// POST /api/products — create in WooCommerce
+router.post('/', async (req, res, next) => {
+  try {
+    if (!req.body.name) return res.status(400).json({ message: 'name is required' })
+    const created = await products.create(req.body)
+    const s = await settings.get()
+    res.status(201).json(products.withStatus(created, s.lowStockThreshold))
+  } catch (e) {
+    next(e)
+  }
+})
+
+// PUT /api/products/:id — update in WooCommerce
+router.put('/:id', async (req, res, next) => {
+  try {
+    const updated = await products.update(req.params.id, req.body)
+    if (!updated) return res.status(404).json({ message: 'Product not found' })
+    const s = await settings.get()
+    res.json(products.withStatus(updated, s.lowStockThreshold))
+  } catch (e) {
+    next(e)
+  }
+})
+
+// DELETE /api/products/:id — delete in WooCommerce
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const ok = await products.remove(req.params.id)
+    if (!ok) return res.status(404).json({ message: 'Product not found' })
+    res.json({ ok: true })
+  } catch (e) {
+    next(e)
+  }
+})
 
 module.exports = router
