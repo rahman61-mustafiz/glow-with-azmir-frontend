@@ -203,7 +203,16 @@ export default function SalesEntry() {
                   onClick={() => addToCart(p)}
                 >
                   {n > 0 && <span className="prod-qty-badge">{n}</span>}
+                  <span className="prod-image">
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} loading="lazy" />
+                    ) : (
+                      <span className="prod-image-ph">✦</span>
+                    )}
+                  </span>
                   <span className="prod-name">{p.name}</span>
+                  {p.description && <span className="prod-desc">{p.description}</span>}
+                  {p.sku && <span className="prod-sku">SKU: {p.sku}</span>}
                   <span className="prod-meta">
                     <span className="prod-price">{fmtBDT(p.sellPrice)}</span>
                     <span className={'prod-stock' + (p.status === 'low' ? ' low' : '')}>

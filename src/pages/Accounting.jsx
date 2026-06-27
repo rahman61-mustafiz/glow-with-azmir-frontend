@@ -41,6 +41,10 @@ export default function Accounting() {
   if (!data) return (<><PageHeader title="Accounting" /><div className="card muted">Loading business accounts…</div></>)
 
   const cards = [
+    { label: 'Sales revenue', value: fmtBDT(data.salesRevenue ?? 0), tone: 'pos' },
+    { label: 'Units sold', value: String(data.unitsSold ?? 0), tone: 'neutral' },
+    { label: 'Gross profit (sell − buy)', value: fmtBDT(data.grossProfit ?? 0), tone: (data.grossProfit ?? 0) >= 0 ? 'pos' : 'neg' },
+    { label: 'Stock remaining', value: `${data.unitsOnHand} units`, tone: 'neutral' },
     { label: 'Total income', value: fmtBDT(data.income), tone: 'pos' },
     { label: 'Total expenses', value: fmtBDT(data.expenses), tone: 'neg' },
     { label: 'Net profit', value: fmtBDT(data.profit), tone: data.profit >= 0 ? 'pos' : 'neg' },
