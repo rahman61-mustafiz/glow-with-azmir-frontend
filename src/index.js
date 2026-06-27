@@ -44,6 +44,7 @@ app.use('/api/accounting', require('./routes/accounting'))
 app.use('/api/gallery', require('./routes/gallery'))
 app.use('/api/advertise', require('./routes/advertise'))
 app.use('/api/settings', require('./routes/settings'))
+app.use('/api/admin', require('./routes/admin'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
