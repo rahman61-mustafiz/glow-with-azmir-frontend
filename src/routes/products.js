@@ -23,15 +23,33 @@ router.get('/public', async (_req, res, next) => {
   }
 })
 
-// POST /api/products — create in WooCommerce
-router.post('/', async (req, res, next) => {
+// POST /api/products — publish a product into WooCommerce.
+// Accepts the n8n/external body (snake_case) and the admin panel body (camelCase).
+// Returns { ok, id, product } on success, or { ok:false, message } with a non-2xx
+// status on failure, so external callers (n8n) can detect failures.
+router.post('/', async (req, res) => {
   try {
-    if (!req.body.name) return res.status(400).json({ message: 'name is required' })
-    const created = await products.create(req.body)
+    const b = req.body || {}
+    if (!b.name || !String(b.name).trim()) {
+      return res.status(400).json({ ok: false, message: 'name is required' })
+    }
+    const data = {
+      name: b.name,
+      sku: b.sku,
+      category: b.category, // optional (panel)
+      sellPrice: b.selling_price ?? b.sellPrice,
+      buyPrice: b.buying_price ?? b.buyPrice,
+      stock: b.stock,
+      shortDescription: b.short_description ?? b.shortDescription,
+      description: b.description,
+      images: Array.isArray(b.images) ? b.images : undefined,
+    }
+    const created = await products.create(data) // status=publish, manage_stock=true
     const s = await settings.get()
-    res.status(201).json(products.withStatus(created, s.lowStockThreshold))
+    res.status(201).json({ ok: true, id: created.id, product: products.withStatus(created, s.lowStockThreshold) })
   } catch (e) {
-    next(e)
+    const status = e.status && e.status >= 400 && e.status < 600 ? e.status : 500
+    res.status(status).json({ ok: false, message: e.message || 'Failed to create product' })
   }
 })
 

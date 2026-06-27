@@ -81,6 +81,12 @@ async function toWooBody(data) {
     body.manage_stock = true
     body.stock_quantity = Number(data.stock) || 0
   }
+  if (data.shortDescription !== undefined) body.short_description = data.shortDescription
+  if (data.description !== undefined) body.description = data.description
+  // images: array of URLs; Woo side-loads each into the media library, first = featured.
+  if (Array.isArray(data.images) && data.images.length) {
+    body.images = data.images.filter(Boolean).map((src) => ({ src }))
+  }
   if (data.category) {
     const catId = await resolveCategoryId(data.category)
     if (catId) body.categories = [{ id: catId }]
