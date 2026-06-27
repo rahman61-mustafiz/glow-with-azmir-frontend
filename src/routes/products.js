@@ -53,6 +53,17 @@ router.post('/', async (req, res) => {
   }
 })
 
+// POST /api/products/republish-instock — publish every in-stock product that
+// isn't published (rule: any product with stock >= 1 must be publicly visible).
+router.post('/republish-instock', async (_req, res) => {
+  try {
+    const ids = await products.publishInStockDrafts()
+    res.json({ ok: true, count: ids.length, publishedIds: ids })
+  } catch (e) {
+    res.status(e.status && e.status >= 400 && e.status < 600 ? e.status : 500).json({ ok: false, message: e.message })
+  }
+})
+
 // PUT /api/products/:id — update in WooCommerce
 router.put('/:id', async (req, res, next) => {
   try {

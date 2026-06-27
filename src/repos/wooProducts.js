@@ -152,4 +152,24 @@ async function remove(id) {
   }
 }
 
-module.exports = { list, get, create, update, remove, withStatus, mapProduct, BUY_META }
+// Publish any product that is in stock (qty >= 1, or unmanaged + instock) but
+// isn't currently published. Returns the list of product ids that were published.
+async function publishInStockDrafts() {
+  const items = await wooRequest('/products', { query: { per_page: 100, status: 'any' } })
+  const targets = items.filter((w) => {
+    if (w.status === 'publish') return false
+    const inStock = w.stock_quantity != null ? Number(w.stock_quantity) >= 1 : w.stock_status === 'instock'
+    return inStock
+  })
+  const ids = []
+  for (const w of targets) {
+    await wooRequest('/products/' + w.id, {
+      method: 'PUT',
+      body: { status: 'publish', catalog_visibility: 'visible' },
+    })
+    ids.push(String(w.id))
+  }
+  return ids
+}
+
+module.exports = { list, get, create, update, remove, withStatus, mapProduct, publishInStockDrafts, BUY_META }

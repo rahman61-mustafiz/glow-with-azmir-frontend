@@ -81,6 +81,20 @@ if (telegram.configured()) {
   console.log('[telegram] TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set — daily summary disabled')
 }
 
+// ── Auto-publish in-stock products (rule: stock >= 1 -> publicly visible) ─────
+const wooProducts = require('./repos/wooProducts')
+const { configured: wooConfigured } = require('./config/woo')
+const PUBLISH_SWEEP_CRON = process.env.PUBLISH_SWEEP_CRON || '*/10 * * * *' // every 10 min
+if (wooConfigured()) {
+  cron.schedule(PUBLISH_SWEEP_CRON, () => {
+    wooProducts
+      .publishInStockDrafts()
+      .then((ids) => { if (ids.length) console.log('[publish-sweep] published in-stock drafts:', ids.join(',')) })
+      .catch((e) => console.error('[publish-sweep] error:', e.message))
+  })
+  console.log('[publish-sweep] scheduled:', PUBLISH_SWEEP_CRON)
+}
+
 // ── Start ───────────────────────────────────────────────────────────────────
 // Firestore connects lazily over HTTPS — no explicit DB connection step needed.
 const PORT = process.env.PORT || 4000
