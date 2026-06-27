@@ -30,3 +30,6 @@ Thumbs.db
 
 # Stray nested duplicate clone (not part of the app)
 glow-with-azmir-frontend/
+
+# Stray local uploads (belong to the backend, not the frontend)
+uploads/
