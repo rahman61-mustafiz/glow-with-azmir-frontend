@@ -34,6 +34,8 @@ function mapProduct(w) {
     stockStatus: w.stock_status || 'instock',
     image,
     description: stripHtml(w.short_description).slice(0, 160),
+    published: w.status === 'publish',
+    visibility: w.catalog_visibility || 'visible',
   }
 }
 
@@ -78,8 +80,10 @@ async function toWooBody(data) {
   if (data.sellPrice !== undefined) body.regular_price = String(Number(data.sellPrice) || 0)
   if (data.buyPrice !== undefined) body.meta_data.push({ key: BUY_META, value: String(Number(data.buyPrice) || 0) })
   if (data.stock !== undefined) {
+    const qty = Number(data.stock) || 0
     body.manage_stock = true
-    body.stock_quantity = Number(data.stock) || 0
+    body.stock_quantity = qty
+    body.stock_status = qty > 0 ? 'instock' : 'outofstock' // not hidden as out-of-stock
   }
   if (data.shortDescription !== undefined) body.short_description = data.shortDescription
   if (data.description !== undefined) body.description = data.description
@@ -91,15 +95,41 @@ async function toWooBody(data) {
     const catId = await resolveCategoryId(data.category)
     if (catId) body.categories = [{ id: catId }]
   }
+  // Optional passthroughs (used to flip an existing product's visibility/status).
+  const status = data.status
+  if (status !== undefined) body.status = status
+  const vis = data.catalog_visibility ?? data.catalogVisibility
+  if (vis !== undefined) body.catalog_visibility = vis
+  const ss = data.stock_status ?? data.stockStatus
+  if (ss !== undefined) body.stock_status = ss
   if (!body.meta_data.length) delete body.meta_data
   return body
 }
 
 async function create(data) {
-  const body = await toWooBody(data)
-  body.type = body.type || 'simple'
-  if (body.status === undefined) body.status = 'publish'
-  return mapProduct(await wooRequest('/products', { method: 'POST', body }))
+  // Always default a category (some shop pages filter by category).
+  const d = { ...data, category: data.category || process.env.WOO_DEFAULT_CATEGORY || 'Uncategorized' }
+  const full = await toWooBody(d)
+  // Images are attached in a 2nd step so a side-load failure can NEVER leave the
+  // product as a hidden draft — the product is published first, image is best-effort.
+  const images = full.images
+  delete full.images
+
+  full.type = full.type || 'simple'
+  full.status = 'publish'
+  full.catalog_visibility = 'visible'
+
+  const created = await wooRequest('/products', { method: 'POST', body: full })
+
+  if (Array.isArray(images) && images.length) {
+    try {
+      const updated = await wooRequest('/products/' + created.id, { method: 'PUT', body: { images } })
+      return mapProduct(updated)
+    } catch {
+      return mapProduct(created) // published without image, rather than failing/drafting
+    }
+  }
+  return mapProduct(created)
 }
 
 async function update(id, data) {
