@@ -1,7 +1,8 @@
 const router = require('express').Router()
 const ledger = require('../repos/ledger')
 const products = require('../repos/wooProducts') // stock value derived from WooCommerce
-const sales = require('../repos/wooSales') // sales revenue from WooCommerce orders
+const sales = require('../repos/wooSales') // sales from WooCommerce orders
+const { buyPriceMap, salesMetrics } = require('../lib/metrics')
 
 // GET /api/accounting/summary
 router.get('/summary', async (_req, res, next) => {
@@ -9,11 +10,14 @@ router.get('/summary', async (_req, res, next) => {
     const entries = await ledger.list(200)
     const ledgerIncome = entries.filter((e) => e.type === 'income').reduce((s, e) => s + e.amount, 0)
     const expenses = entries.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0)
-    // Income = manual ledger income + recent WooCommerce sales revenue (last ~100 orders).
-    const salesIncome = await sales.recentRevenue(100)
-    const income = ledgerIncome + salesIncome
 
     const prods = await products.list()
+    const recentOrders = await sales.listRecent(100)
+    // Sales revenue / units sold / gross profit (revenue − COGS) from recent orders.
+    const m = salesMetrics(recentOrders, buyPriceMap(prods))
+
+    const income = ledgerIncome + m.revenue // manual income + Woo sales revenue
+
     const unitsOnHand = prods.reduce((s, p) => s + p.stock, 0)
     const stockValueCost = prods.reduce((s, p) => s + p.stock * p.buyPrice, 0)
     const stockValueRetail = prods.reduce((s, p) => s + p.stock * p.sellPrice, 0)
@@ -21,7 +25,11 @@ router.get('/summary', async (_req, res, next) => {
     res.json({
       income,
       expenses,
-      profit: income - expenses,
+      profit: income - expenses, // net (income − expenses)
+      salesRevenue: m.revenue, // WooCommerce sales revenue (recent)
+      unitsSold: m.unitsSold,
+      cogs: m.cogs,
+      grossProfit: m.grossProfit, // revenue − (qty × buying price)
       unitsOnHand,
       stockValueCost,
       stockValueRetail,

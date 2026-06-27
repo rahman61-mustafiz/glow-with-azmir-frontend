@@ -47,6 +47,16 @@ app.use('/api/settings', require('./routes/settings'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
+// Manual trigger for the Telegram daily summary (handy for testing the setup).
+app.get('/api/telegram/test', async (_req, res) => {
+  try {
+    const { sendDailySummary } = require('./jobs/telegramSummary')
+    res.json(await sendDailySummary())
+  } catch (e) {
+    res.status(500).json({ message: e.message })
+  }
+})
+
 // ── 404 + error handler ─────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ message: `Route ${req.method} ${req.path} not found` }))
 app.use((err, _req, res, _next) => {
@@ -54,6 +64,22 @@ app.use((err, _req, res, _next) => {
   if (status >= 500) console.error('Unhandled error:', err)
   res.status(status).json({ message: err.message || 'Internal server error' })
 })
+
+// ── Scheduled Telegram daily summary ────────────────────────────────────────
+const cron = require('node-cron')
+const telegram = require('./jobs/telegramSummary')
+const SUMMARY_CRON = process.env.TELEGRAM_SUMMARY_CRON || '0 21 * * *' // 9:00 PM daily (TZ above)
+if (telegram.configured()) {
+  cron.schedule(SUMMARY_CRON, () => {
+    telegram
+      .sendDailySummary()
+      .then(() => console.log('[telegram] daily summary sent'))
+      .catch((e) => console.error('[telegram] summary error:', e.message))
+  })
+  console.log('[telegram] daily summary scheduled:', SUMMARY_CRON)
+} else {
+  console.log('[telegram] TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set — daily summary disabled')
+}
 
 // ── Start ───────────────────────────────────────────────────────────────────
 // Firestore connects lazily over HTTPS — no explicit DB connection step needed.

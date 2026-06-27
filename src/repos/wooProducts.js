@@ -1,17 +1,27 @@
 // Products, sourced from WooCommerce (the source of truth).
 // Maps a Woo product <-> the Glow shape the frontend expects:
-//   { id, name, sku, category, buyPrice, sellPrice, stock, status }
+//   { id, name, sku, category, buyPrice, sellPrice, stock, status, image, description }
 //
-// buyPrice (admin-only cost) has no native Woo field, so it's stored in product
-// meta under `_glow_buy_price`.
+// buyPrice (admin-only cost) has no native Woo field, so it's stored in a PRIVATE
+// product meta field `_buying_price` (underscore prefix = hidden from the REST
+// public view / storefront).
 
 const { wooRequest } = require('../config/woo')
 
-const GLOW_BUY_META = '_glow_buy_price'
+const BUY_META = '_buying_price'
+
+function stripHtml(s) {
+  return String(s || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 function mapProduct(w) {
   const meta = Array.isArray(w.meta_data) ? w.meta_data : []
-  const buy = meta.find((m) => m.key === GLOW_BUY_META)
+  const buy = meta.find((m) => m.key === BUY_META)
+  const image = Array.isArray(w.images) && w.images[0] ? w.images[0].src : ''
   return {
     id: String(w.id),
     name: w.name || '',
@@ -22,6 +32,8 @@ function mapProduct(w) {
     stock: w.stock_quantity != null ? Number(w.stock_quantity) : 0,
     manageStock: !!w.manage_stock,
     stockStatus: w.stock_status || 'instock',
+    image,
+    description: stripHtml(w.short_description).slice(0, 160),
   }
 }
 
@@ -64,7 +76,7 @@ async function toWooBody(data) {
   if (data.name !== undefined) body.name = data.name
   if (data.sku !== undefined) body.sku = data.sku || ''
   if (data.sellPrice !== undefined) body.regular_price = String(Number(data.sellPrice) || 0)
-  if (data.buyPrice !== undefined) body.meta_data.push({ key: GLOW_BUY_META, value: String(Number(data.buyPrice) || 0) })
+  if (data.buyPrice !== undefined) body.meta_data.push({ key: BUY_META, value: String(Number(data.buyPrice) || 0) })
   if (data.stock !== undefined) {
     body.manage_stock = true
     body.stock_quantity = Number(data.stock) || 0
@@ -104,4 +116,4 @@ async function remove(id) {
   }
 }
 
-module.exports = { list, get, create, update, remove, withStatus, mapProduct, GLOW_BUY_META }
+module.exports = { list, get, create, update, remove, withStatus, mapProduct, BUY_META }
