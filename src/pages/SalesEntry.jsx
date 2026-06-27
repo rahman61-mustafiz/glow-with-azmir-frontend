@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { fmtBDT } from '../data/products.js'
-import { recordSale, getTodaySales } from '../api/sales.js'
+import { recordSale } from '../api/sales.js'
 import { getProducts } from '../api/products.js'
 import { suggestCustomers, lookupCustomer } from '../api/customers.js'
 import './sales-entry.css'
 
-// "Sales entry" — manual input system for the tablet, modelled on the Noor
-// booking tablet: categories | product grid | customer + cart + confirm.
-// Admin records each sale: client name, phone, and the product(s) bought.
+// Staff / tablet SELLING screen. OPEN (no passcode) and standalone — shows only
+// the product grid, search/filter, and the sell flow. NO accounting figures
+// (revenue / profit / totals) and NO links into the admin area.
 
 export default function SalesEntry() {
   const [products, setProducts] = useState([])
@@ -35,14 +34,8 @@ export default function SalesEntry() {
 
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
-  const [todayTotal, setTodayTotal] = useState(null)
 
   const phoneTimer = useRef(null)
-
-  // Today's running total (for the header chip).
-  useEffect(() => {
-    getTodaySales().then((d) => setTodayTotal(d.total))
-  }, [success])
 
   // Phone type-ahead + lookup (debounced), mirroring the Noor flow.
   useEffect(() => {
@@ -137,26 +130,23 @@ export default function SalesEntry() {
   const qtyInCart = (id) => cart.find((l) => l.id === id)?.qty ?? 0
 
   return (
-    <div className="sales">
-      {/* Header bar */}
-      <div className="sales-head">
-        <div>
-          <h1>Sales entry</h1>
-          <p className="muted">
-            Record a sale — client name, phone &amp; product(s). For tablet use.
-          </p>
+    <div className="sales-page">
+      {/* Standalone top bar — no admin navigation */}
+      <header className="sales-topbar">
+        <span className="sales-wordmark">
+          <span className="wordmark-mark">✦</span> Glow with Azmir
+        </span>
+        <span className="sales-badge">Sales</span>
+      </header>
+
+      <div className="sales">
+        {/* Header */}
+        <div className="sales-head">
+          <div>
+            <h1>Sell</h1>
+            <p className="muted">Tap products, add the customer, and confirm the sale.</p>
+          </div>
         </div>
-        <div className="row">
-          {todayTotal != null && (
-            <span className="today-chip">
-              Today: <strong>{fmtBDT(todayTotal)}</strong>
-            </span>
-          )}
-          <Link to="/" className="btn btn-ghost">
-            View Today's sales →
-          </Link>
-        </div>
-      </div>
 
       {/* 3-panel layout (Noor-style) */}
       <div className="sales-grid">
@@ -314,7 +304,7 @@ export default function SalesEntry() {
               {success.customerName} · {fmtBDT(success.total)}
             </p>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-              It now appears in Home → Today's sales.
+              Stock updated.
             </p>
             <button className="btn btn-primary" style={{ marginTop: 16, width: '100%' }} onClick={() => setSuccess(null)}>
               New sale
@@ -322,6 +312,7 @@ export default function SalesEntry() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

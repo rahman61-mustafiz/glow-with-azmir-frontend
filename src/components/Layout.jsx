@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom'
 import './layout.css'
 
+// Admin-only navigation (this Layout renders inside the passcode-gated /admin area).
 const NAV_ITEMS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/sales', label: 'Sales entry' },
-  { to: '/accounting', label: 'Accounting' },
-  { to: '/gallery', label: 'Gallery' },
-  { to: '/product-price', label: 'Product price' },
-  { to: '/advertise', label: 'Advertise panel' },
+  { to: '/admin', label: 'Accounting', end: true },
+  { to: '/admin/dashboard', label: 'Dashboard' },
+  { to: '/admin/products', label: 'Product price' },
+  { to: '/admin/gallery', label: 'Gallery' },
+  { to: '/admin/advertise', label: 'Advertise panel' },
 ]
 
 export default function Layout({ children }) {

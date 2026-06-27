@@ -9,10 +9,10 @@ import { getGallery } from '../api/gallery.js'
 import { getAdvertise } from '../api/advertise.js'
 
 const SHORTCUTS = [
-  { to: '/sales', title: 'Sales entry', desc: 'Record a sale on the tablet.' },
-  { to: '/advertise', title: 'Advertise panel', desc: 'Update the home-page video + description.' },
-  { to: '/product-price', title: 'Product price', desc: 'Manage products, buying & selling prices.' },
-  { to: '/accounting', title: 'Accounting', desc: 'Income, expenses, profit & stock value.' },
+  { to: '/admin', title: 'Accounting', desc: 'Revenue, profit, units sold & stock.' },
+  { to: '/admin/products', title: 'Product price', desc: 'Manage products, buying & selling prices.' },
+  { to: '/admin/advertise', title: 'Advertise panel', desc: 'Update the home-page video + description.' },
+  { to: '/admin/gallery', title: 'Gallery', desc: 'Curate showcase images.' },
 ]
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
         title="Dashboard"
         subtitle="Welcome back — manage everything that powers the Glow with Azmir storefront."
         actions={
-          <Link to="/advertise" className="btn btn-primary">
+          <Link to="/admin/advertise" className="btn btn-primary">
             Edit advertise section
           </Link>
         }

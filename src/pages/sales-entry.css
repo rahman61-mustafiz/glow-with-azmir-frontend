@@ -2,6 +2,46 @@
    Sales entry — Noor-style 3-panel layout, Glow light theme
    ============================================================ */
 
+/* ---------- Standalone page (no admin Layout) ---------- */
+.sales-page {
+  min-height: 100vh;
+  background: var(--white);
+}
+.sales-topbar {
+  background: var(--black);
+  border-bottom: 2px solid var(--gold);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.sales-wordmark {
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.01em;
+}
+.sales-wordmark .wordmark-mark {
+  margin-right: 6px;
+}
+.sales-badge {
+  color: var(--black);
+  background: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.sales {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
 .sales-head {
   display: flex;
   justify-content: space-between;
